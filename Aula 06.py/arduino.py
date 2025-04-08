@@ -1,7 +1,7 @@
 import serial
 import time
 
-porta = "COM5"
+porta = "COM4"
 arduino = serial.Serial (porta, 9600, timeout = 1)
 time.sleep (2)
 
