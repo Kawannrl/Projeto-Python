@@ -1,0 +1,51 @@
+// pince do sensor 1K:-2804
+const int TRIG_PIN = 12;
+const int ECHO_PIN = 11;
+
+// velocidadedo som: 343 m/s -> 0.0343 cm/ps
+const float SOUND_SPEED = 0.0343;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+}
+
+long medirDistanciaCm(){
+  // 1) Limpa o TRIG
+  digitalWrite (TRIG_PIN, LOW);
+  delayMicroseconds (2);
+
+  // 2) Dispara pulsos de 10ps
+  digitalWrite (TRIG_PIN, HIGH);
+  delayMicroseconds (10);
+  digitalWrite (TRIG_PIN, LOW);
+
+  // 3)Modo duraçãodo pulso de retorno
+  long duracao = pulseIn (ECHO_PIN, HIGH, 30000);
+  // timeout de 30ms para não travar indefinide
+
+  // 4) converte para centimetros
+  long distancia = (duracao * SOUND_SPEED) / 2.0;
+  return distancia;
+}
+
+void loop() {
+  // só processa quando receber algo
+  if (Serial.available()){
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim ();  //remove \r, espaços etc.
+
+    if (cmd == "REQ"){
+      long dist = medirDistanciaCm ();
+      
+      if (dist <= 0){
+        Serial.println("------");
+      }
+      else {
+        Serial.println(dist);
+      }
+    }
+  }
+
+}
