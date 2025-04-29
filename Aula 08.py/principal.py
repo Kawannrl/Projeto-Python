@@ -1,5 +1,5 @@
 from arduino_serial import Arduino
-from banco_mysql import
+from banco_mysql import Banco
 import time
 
 PORTA = "COM5"
@@ -9,7 +9,8 @@ INTERVALO = 1.0
 def principal ():
     arduino = Arduino (port = PORTA, baudrate = BAUDRATE)
     arduino.conexao_aberta ()
-    bd -Banco
+    bd = Banco ()
+    bd.criar_tabela ()
     print ("Iniciando a leitura da Distância. Ctrl-C para parar")
     
     try:
@@ -24,7 +25,9 @@ def principal ():
             print (f"Distância: {resposta} cm")
             
             #gravar bd
-            bd.inserir_atualizar ("Luca", 1, resposta)
+            bd.inserir_atualizar ("Kawann", 1, resposta)
+            
+            # time.sleep (INTERVALO)
             bd.listar ()
             
             #intervalo
