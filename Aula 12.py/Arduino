@@ -1,0 +1,87 @@
+#include <SPI.h>
+#include <Ethernet.h>
+
+int ledPin = 6;
+int sensorPin = 7;
+
+bool estadoSensor = false;
+bool modoManual = false;      // true se comando TCP foi usado
+unsigned long tempoDeMovimento = 0;
+const unsigned long tempoLimite = 5000;
+
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0x07 };
+IPAddress ip(192, 168, 1, 105);
+EthernetServer server(5000);
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ledPin, OUTPUT);
+  pinMode(sensorPin, INPUT);
+  Ethernet.begin(mac, ip);
+  server.begin();
+  Serial.println("Servidor iniciado...");
+}
+
+void loop() {
+  if (!modoManual) {
+    int leitura = digitalRead(sensorPin);
+
+    if (leitura == HIGH) {
+      digitalWrite(ledPin, HIGH);
+      if (!estadoSensor) {
+        Serial.println("Movimento detectado");
+        estadoSensor = true;
+        tempoDeMovimento = millis();
+      }
+    } else {
+      if (estadoSensor && millis() - tempoDeMovimento >= tempoLimite) {
+        digitalWrite(ledPin, LOW);
+        Serial.println("Sem movimento");
+        estadoSensor = false;
+      }
+    }
+  }
+
+  EthernetClient client = server.available();
+  if (client) {
+    Serial.println("Cliente conectado");
+
+    String comando = "";
+    unsigned long timeout = millis() + 2000;
+
+    while (client.connected() && millis() < timeout) {
+      if (client.available()) {
+        char c = client.read();
+        if (c == '\n') break;
+        comando += c;
+      }
+    }
+
+    comando.trim();
+
+    Serial.print("Comando recebido: ");
+    Serial.println(comando);
+
+    if (comando == "ligar") {
+      digitalWrite(ledPin, HIGH);
+      modoManual = true;
+      client.println("LED ligado (modo manual)");
+    } else if (comando == "desligar") {
+      digitalWrite(ledPin, LOW);
+      modoManual = true;
+      client.println("LED desligado (modo manual)");
+    } else if (comando == "movimento") {
+      modoManual = false;
+      client.println("1");
+    } else if (comando == "movimento") {
+        modoManual = false;
+      client.println("0");
+    } else {
+      client.println("Comando inválido. Use: ligar, desligar, auto");
+    }
+
+    delay(10);
+    client.stop();
+    Serial.println("Cliente desconectado");
+  }
+}
