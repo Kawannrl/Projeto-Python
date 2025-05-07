@@ -28,7 +28,7 @@ TIMEOUT = 5
 
 while True:
         ip = int(input("Escolhe  de 1 té 9 para Arduino: "))
-        opcao = input("escolha 0 ou 1 para o LED, ou ultra para ultrassom: ")
+        opcao = input("escolha 0 ou 1 para o LED, ou movimento para o sensor de movimento: ")
         
         if ip > 11 :
              print("Dispositivo Invalido! Programa Encerrado")
@@ -37,8 +37,8 @@ while True:
             msg = b"ligar\n"
         elif opcao == "0":
             msg = b"desligar\n"
-        elif opcao.lower() == "distancia":
-            msg = b"distancia\n"
+        elif opcao == "movimento":
+            msg = b"movimento\n"
         else:
              print("Opção Invalida! Programa Encerrado")
              break
