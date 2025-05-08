@@ -1,0 +1,94 @@
+#include <SPI.h>
+#include <Ethernet.h>
+#include <Wire.h> 
+#include <MFRC522.h> // Incluindo a biblioteca MFRC522
+
+#define SS_PIN 10 // Pino SDA
+#define RST_PIN 9 // Pino de RESET
+
+MFRC522 rfid(SS_PIN, RST_PIN); // Criando um objeto MFRC522
+
+// Definindo pinos para LEDs
+const int pinoLedVerde = 3;
+const int pinoLedVermelho = 2;
+
+// Configurações de rede
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0x07 }; // MAC do dispositivo
+IPAddress ip(192, 168, 1, 105); // IP do dispositivo
+EthernetServer server(1000); // Servidor na porta 1000
+
+// Variáveis globais
+String strID = ""; // Variável global para armazenar o ID da tag RFID
+
+void setup() {
+  Serial.begin(9600); // Inicializa a comunicação serial
+  Wire.begin(); // Inicializa a biblioteca Wire
+  SPI.begin(); // Inicializa o barramento SPI
+  rfid.PCD_Init(); // Inicializa o MFRC522
+  
+  pinMode(pinoLedVerde, OUTPUT); // Define o pino do LED verde como saída
+  pinMode(pinoLedVermelho, OUTPUT); // Define o pino do LED vermelho como saída
+  pinMode(4, OUTPUT);    // Desativa SD
+  
+  digitalWrite(pinoLedVerde, HIGH); // Inicializa o LED verde desligado
+  digitalWrite(pinoLedVermelho, HIGH); // Inicializa o LED vermelho desligado
+  digitalWrite(4, HIGH);
+
+  Ethernet.begin(mac, ip); // Inicializa a conexão Ethernet
+  server.begin(); // Inicia o servidor
+  SPI.begin();
+  Ethernet.begin(mac, ip);
+  server.begin();
+  Serial.println("Servidor iniciado...");
+  rfid.PCD_Init();       // Inicializa RFID
+}
+
+// Função de leitura e validação da tag RFID
+void leituraRfid() {
+  if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) 
+    return;
+
+  strID = ""; // Limpa o valor da variável antes de começar a ler
+  for (byte i = 0; i < 4; i++) {
+    strID += (rfid.uid.uidByte[i] < 0x10 ? "0" : "") + String(rfid.uid.uidByte[i], HEX) + (i != 3 ? ":" : "");
+  }
+  strID.toUpperCase();
+}
+
+void loop() {
+  leituraRfid(); // Chama a função para ler o RFID
+  
+  EthernetClient client = server.available(); // Verifica se há clientes conectados
+  if (client) {
+    Serial.println("Cliente conectado");
+
+    String comando = "";
+    unsigned long timeout = millis() + 2000;
+
+    while (client.connected() && millis() < timeout) {
+      if (client.available()) {
+        char c = client.read();
+        if (c == '\n') break;
+        comando += c;
+      }
+    }
+
+    comando.trim();
+
+    Serial.print("Comando recebido: ");
+    Serial.println(comando);
+
+    // Valida o comando recebido
+    if (comando == "entrada" && strID.indexOf("27:41:AA:AB") >= 0) {
+      client.println("Entrada Liberada");  // Se a tag for válida
+    } else if (comando == "entrada" && strID.indexOf("27:41:AA:AB") == -1) {
+      client.println("Entrada Negada");  // Se a tag for inválida
+    } else {
+      client.println("Comando inválido. Use: entrada");
+    }
+
+    delay(10); // Atraso antes de desconectar o cliente
+    client.stop(); // Fecha a conexão com o cliente
+    Serial.println("Cliente desconectado");
+  }
+}
