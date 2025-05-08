@@ -11,7 +11,7 @@ const unsigned long tempoLimite = 5000;
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0x07 };
 IPAddress ip(192, 168, 1, 105);
-EthernetServer server(5000);
+EthernetServer server(1000);
 
 void setup() {
   Serial.begin(9600);
@@ -65,19 +65,19 @@ void loop() {
     if (comando == "ligar") {
       digitalWrite(ledPin, HIGH);
       modoManual = true;
-      client.println("LED ligado (modo manual)");
+      client.println("LED ligado");
     } else if (comando == "desligar") {
       digitalWrite(ledPin, LOW);
       modoManual = true;
-      client.println("LED desligado (modo manual)");
-    } else if (comando == "movimento") {
+      client.println("LED desligado");
+    } else if (comando == "movimento" and estadoSensor == true) {
       modoManual = false;
       client.println("1");
-    } else if (comando == "movimento") {
+    } else if (comando == "movimento" and estadoSensor == false) {
         modoManual = false;
       client.println("0");
     } else {
-      client.println("Comando inválido. Use: ligar, desligar, auto");
+      client.println("Comando inválido. Use: ligar, desligar, movimento");
     }
 
     delay(10);
